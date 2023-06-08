@@ -5,6 +5,10 @@ VisualStudioVersion = 17.7.33711.374
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupeBuster.App", "DupeBuster.App\DupeBuster.App.csproj", "{2C1D520E-020A-4CC1-A70C-6A75FBA9D901}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupeBuster.Core", "DupeBuster.Core\DupeBuster.Core.csproj", "{50FE80C0-7B13-48BE-BBE4-850762F2494D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupeBuster.CLI", "DupeBuster.CLI\DupeBuster.CLI.csproj", "{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{2C1D520E-020A-4CC1-A70C-6A75FBA9D901}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C1D520E-020A-4CC1-A70C-6A75FBA9D901}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C1D520E-020A-4CC1-A70C-6A75FBA9D901}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50FE80C0-7B13-48BE-BBE4-850762F2494D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50FE80C0-7B13-48BE-BBE4-850762F2494D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50FE80C0-7B13-48BE-BBE4-850762F2494D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50FE80C0-7B13-48BE-BBE4-850762F2494D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
