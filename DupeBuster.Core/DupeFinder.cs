@@ -1,32 +1,56 @@
 ﻿using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using System.Linq;
 
 namespace DupeBuster.Core;
 
 public class DupeFinder
 {
     private readonly IFileSystem _fileSystem;
+    private readonly HashSet<IIdentifier> _identifiers;
 
     public DupeFinder(IFileSystem fileSystem)
     {
         _fileSystem = fileSystem;
+        _identifiers = new HashSet<IIdentifier>();
     }
 
-    public async Task<IEnumerable<IGrouping<string, Item>>> FindDuplicatesAsync(string rootPath, IIdentifier identifier, Intensity intensity)
+    public bool AddIdentifier(IIdentifier identifier)
+        => _identifiers.Add(identifier);
+
+    public async Task<IEnumerable<FindingResult>> FindDuplicatesAsync(string rootPath, Intensity intensity, CancellationToken? ct = null)
     {
-        var files = _fileSystem.Directory
-            .GetFiles(rootPath, "*", SearchOption.AllDirectories)
-            .Select(_fileSystem.FileInfo.New)
-            .ToList();
+        ct ??= CancellationToken.None;
 
-        var result = new ConcurrentBag<Item>();
+        var files = _fileSystem.Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories);
 
-        await Parallel.ForEachAsync(files, async (fileInfo, _) =>
+        var tempResult = new ConcurrentBag<(IdentifierType Type, Item Item)>();
+
+        await Parallel.ForEachAsync(_identifiers, ct.Value, async (identifier, ct) =>
         {
-            var value = await identifier.CalculateAsync(fileInfo, intensity);
-            result.Add(new Item(fileInfo, value));
+            await Parallel.ForEachAsync(files, ct, async (filePath, ct) =>
+            {
+                var fileInfo = _fileSystem.FileInfo.New(filePath);
+                var value = await identifier.CalculateAsync(fileInfo, intensity, ct);
+                tempResult.Add((identifier.Type, new Item(fileInfo, value)));
+            });
         });
 
-        return result.GroupBy(x => x.Value.Value);
+        var result = tempResult
+            .GroupBy(x => x.Type)
+            .Select(x => new FindingResult(x.Key, x.Select(x => x.Item).ToList()))
+            .Where(x => x.Values.Count > 1);
+
+        return result;
     }
 }
+
+public enum IdentifierType
+{
+    FileName,
+    FileSize
+}
+
+public record struct IdentificationResult(string Value, string Reason);
+public record class Item(IFileInfo FileInfo, IdentificationResult Value);
+public record class FindingResult(IdentifierType Type, List<Item> Values);
