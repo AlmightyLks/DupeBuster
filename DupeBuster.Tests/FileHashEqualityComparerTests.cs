@@ -135,6 +135,7 @@ public class FileHashEqualityComparerTests
         var duper = new DupeFinder(fileSystem).AddComparer(_comparer);
 
         var results = (await duper.FindDuplicatesAsync(RootPath, intensity)).ToList();
+        GC.Collect(0, GCCollectionMode.Default, true, true);
         Assert.Single(results);
 
         var comparisonResult = results.First();

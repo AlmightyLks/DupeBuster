@@ -10,7 +10,7 @@ namespace DupeBuster.Core.Util;
 public class ByteArrayComparer : IEqualityComparer<byte[]>
 {
     //    Private backing field for the Default property below.
-    private static ByteArrayComparer _default;
+    private static ByteArrayComparer? _default;
 
     /// <summary>
     ///    Default instance of <see cref = "ByteArrayComparer"/>
@@ -19,7 +19,7 @@ public class ByteArrayComparer : IEqualityComparer<byte[]>
     {
         get
         {
-            if (_default == null)
+            if (_default is null)
             {
                 _default = new ByteArrayComparer();
             }
@@ -34,7 +34,9 @@ public class ByteArrayComparer : IEqualityComparer<byte[]>
     ///	<param name = "obj1">A byte array to test for equality against obj2.</param>
     /// <param name = "obj2">A byte array to test for equality againts obj1.</param>
     /// </summary>
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
     public bool Equals(byte[] obj1, byte[] obj2)
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
     {
         //    We can make use of the StructuralEqualityComparar class to see if these
         //    two arrays are equaly based on their value sequences.

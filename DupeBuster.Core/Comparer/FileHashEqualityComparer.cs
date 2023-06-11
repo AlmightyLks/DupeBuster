@@ -1,10 +1,11 @@
 ﻿using DupeBuster.Core.Util;
-using FastHashes;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Abstractions;
+using System.Security.Cryptography;
 
 namespace DupeBuster.Core.Comparer;
 
@@ -12,7 +13,7 @@ public class FileHashEqualityComparer : FileComparer
 {
     public static readonly FileHashEqualityComparer Default = new FileHashEqualityComparer();
 
-    private static readonly Hash Hash = new FarmHash128();
+    private static readonly HashAlgorithm Hash = MD5.Create();
     private const int BufferSize = 1024 * 1024 * 250;       // 250MiB
     private const int SplicingDistance = BufferSize * 2;    // 500MiB
     private readonly ArrayPool<byte> Pool = ArrayPool<byte>.Create();
@@ -58,22 +59,22 @@ public class FileHashEqualityComparer : FileComparer
     {
         var amounts = (int)(fileInfo.Length / SplicingDistance);
         var remainder = (int)(fileInfo.Length % SplicingDistance);
-        var summarizeArray = Pool.Rent(BufferSize * amounts);
+        var summarizeArray = Pool.Rent(BufferSize * amounts); // Why the fuck do I not respect the remainder in the summary array
+        var buffer = Pool.Rent(amounts);
 
-        await Parallel.ForAsync(0, amounts, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (i, ct) =>
+        //await Parallel.ForAsync(0, amounts, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (i, ct) =>
+        for (int i = 0; i < amounts + 1; i++)
         {
             var from = i * SplicingDistance;
-            var size = (i == amounts ? BufferSize + remainder : BufferSize);
-
-            var buffer = Pool.Rent(size);
+            var size = (i == amounts + 1 ? BufferSize + remainder : BufferSize);
 
             using var readStream = fileInfo.OpenRead();
             readStream.Position = from;
-            await readStream.ReadAsync(buffer, ct);
+            int read = await readStream.ReadAsync(buffer, ct);
 
-            Array.Copy(buffer, 0, summarizeArray, i * BufferSize, size);
+            Array.Copy(buffer, 0, summarizeArray, i * BufferSize, read);
             Pool.Return(buffer);
-        });
+        }
 
         var result = Hash.ComputeHash(summarizeArray);
 
@@ -86,7 +87,8 @@ public class FileHashEqualityComparer : FileComparer
         var remainder = (int)(fileInfo.Length % SplicingDistance);
         var summarizeArray = Pool.Rent(BufferSize * amounts);
 
-        await Parallel.ForAsync(0, amounts, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (i, ct) =>
+        //await Parallel.ForAsync(0, amounts, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (i, ct) =>
+        for (int i = 0; i < amounts; i++)
         {
             var from = i * SplicingDistance;
             var size = (i == amounts ? BufferSize + remainder : BufferSize);
@@ -99,7 +101,7 @@ public class FileHashEqualityComparer : FileComparer
 
             Array.Copy(buffer, 0, summarizeArray, i * BufferSize, size);
             Pool.Return(buffer);
-        });
+        }
 
         var result = Hash.ComputeHash(summarizeArray);
 
