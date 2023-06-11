@@ -1,27 +1,34 @@
 ﻿using DupeBuster.Core;
+using DupeBuster.Core.Comparer;
 using System.Diagnostics;
 using System.IO.Abstractions;
 
-var path = @"C:\Users\Wholesome\Documents\Dupes_Test";
+//var path = @"C:\Users\Wholesome\Documents\Dupes_Test\1";
+var path = Path.Combine("Assets");
 
 var finder = new DupeFinder(new FileSystem());
-finder.AddIdentifier(new FileNameIdentifier());
+finder.AddComparer(new FileHashEqualityComparer());
 
 var sw = Stopwatch.GetTimestamp();
-var dupes = await finder.FindDuplicatesAsync(path, Intensity.Rough);
+var results = await finder.FindDuplicatesAsync(path, Intensity.Rough);
 var diff = Stopwatch.GetElapsedTime(sw);
 
 Console.WriteLine($"Took {diff.TotalMilliseconds} ms");
 Console.WriteLine();
 
-foreach (var dupe in dupes)
+foreach (var result in results)
 {
-    Console.WriteLine(dupe.Type);
-    foreach (var lalala in dupe.Values)
-    {
-        Console.WriteLine("\t" + lalala.FileInfo.FullName);
-    }
+    Console.WriteLine(result.Type);
     Console.WriteLine();
+    foreach (var duplicateSet in result.DuplicateSets)
+    {
+        foreach (var duplicate in duplicateSet)
+        {
+            Console.WriteLine("\t" + duplicate.FullName);
+        }
+        Console.WriteLine();
+    }
+    Console.WriteLine("============================");
 }
 
 Console.WriteLine();

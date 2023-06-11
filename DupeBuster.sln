@@ -3,11 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.33711.374
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupeBuster.App", "DupeBuster.App\DupeBuster.App.csproj", "{2C1D520E-020A-4CC1-A70C-6A75FBA9D901}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DupeBuster.App", "DupeBuster.App\DupeBuster.App.csproj", "{2C1D520E-020A-4CC1-A70C-6A75FBA9D901}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupeBuster.Core", "DupeBuster.Core\DupeBuster.Core.csproj", "{50FE80C0-7B13-48BE-BBE4-850762F2494D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DupeBuster.Core", "DupeBuster.Core\DupeBuster.Core.csproj", "{50FE80C0-7B13-48BE-BBE4-850762F2494D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupeBuster.CLI", "DupeBuster.CLI\DupeBuster.CLI.csproj", "{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DupeBuster.CLI", "DupeBuster.CLI\DupeBuster.CLI.csproj", "{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DupeBuster.Benchmarks", "DupeBuster.Benchmarks\DupeBuster.Benchmarks.csproj", "{4CA5518A-8F31-48F2-9068-90E78A8C5C5D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DupeBuster.Tests", "DupeBuster.Tests\DupeBuster.Tests.csproj", "{9A85838D-F52E-4931-8695-B834FD582D02}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{4CB6C1E1-9280-44D8-AD6C-7E0CEEF1693A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DupeBuster.Misc.Shared", "DupeBuster.Misc.Shared\DupeBuster.Misc.Shared.csproj", "{01C77227-DE40-48A3-B59C-0EED4B8F2754}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,9 +35,26 @@ Global
 		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBE0C3FB-E2E3-450F-AEB3-2772B5374C45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CA5518A-8F31-48F2-9068-90E78A8C5C5D}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{4CA5518A-8F31-48F2-9068-90E78A8C5C5D}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{4CA5518A-8F31-48F2-9068-90E78A8C5C5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CA5518A-8F31-48F2-9068-90E78A8C5C5D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A85838D-F52E-4931-8695-B834FD582D02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A85838D-F52E-4931-8695-B834FD582D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A85838D-F52E-4931-8695-B834FD582D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A85838D-F52E-4931-8695-B834FD582D02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01C77227-DE40-48A3-B59C-0EED4B8F2754}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01C77227-DE40-48A3-B59C-0EED4B8F2754}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01C77227-DE40-48A3-B59C-0EED4B8F2754}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01C77227-DE40-48A3-B59C-0EED4B8F2754}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4CA5518A-8F31-48F2-9068-90E78A8C5C5D} = {4CB6C1E1-9280-44D8-AD6C-7E0CEEF1693A}
+		{9A85838D-F52E-4931-8695-B834FD582D02} = {4CB6C1E1-9280-44D8-AD6C-7E0CEEF1693A}
+		{01C77227-DE40-48A3-B59C-0EED4B8F2754} = {4CB6C1E1-9280-44D8-AD6C-7E0CEEF1693A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0FF946BF-92CD-4947-82CC-126599B63769}

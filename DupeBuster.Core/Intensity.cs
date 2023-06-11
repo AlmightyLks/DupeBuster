@@ -3,10 +3,6 @@
 public enum Intensity
 {
     Rough,
-    Intense
+    Precise
 }
 
-/*
-    - Different Criteria
-    - Different Intensity Levels (Quick, Rough, Intense)
-*/
