@@ -1,4 +1,6 @@
 ﻿using DupeBuster.Core.Util;
+using Serilog;
+using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -11,11 +13,12 @@ namespace DupeBuster.Core.Comparer;
 
 public class FileHashEqualityComparer : FileComparer
 {
+    private static ILogger? _logger;
+    public static ILogger Logger => _logger ??= Log.ForContext<FileHashEqualityComparer>();
+
     public static readonly FileHashEqualityComparer Default = new FileHashEqualityComparer();
 
-    private static readonly HashAlgorithm Hash = MD5.Create();
-    private const int BufferSize = 1024 * 1024 * 250;       // 250MiB
-    private const int SplicingDistance = BufferSize * 2;    // 500MiB
+    private const int SpliceThreshold = 1024 * 1024 * 250;    // 250MiB
     private readonly ArrayPool<byte> Pool = ArrayPool<byte>.Create();
 
     public FileHashEqualityComparer()
@@ -33,11 +36,12 @@ public class FileHashEqualityComparer : FileComparer
         };
 
         var dupes = new ConcurrentDictionary<byte[], List<IFileInfo>>(ByteArrayComparer.Default);
-        await Parallel.ForEachAsync(fileInfos, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (fileInfo, ct) =>
+        await Parallel.ForEachAsync(fileInfos, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 1 }, async (fileInfo, ct) =>
         {
-            var hash = await (fileInfo.Length > SplicingDistance ? hashCalc(fileInfo) : CalculateEntireHashAsync(fileInfo, ct));
+            var hash = await (fileInfo.Length > SpliceThreshold ? hashCalc(fileInfo) : CalculateEntireHashAsync(fileInfo, ct));
             var duplicate = dupes.GetOrAdd(hash, new List<IFileInfo>());
             duplicate.Add(fileInfo);
+            GC.Collect();
         });
 
         var result = new ComparisonResult(Type, dupes.Values.Where(x => x.Count > 1 && x.DistinctBy(y => y.Length).Count() == 1).ToList());
@@ -46,66 +50,80 @@ public class FileHashEqualityComparer : FileComparer
 
     private async Task<byte[]> CalculateEntireHashAsync(IFileInfo fileInfo, CancellationToken ct)
     {
-        var summarizeArray = Pool.Rent((int)fileInfo.Length);
-
         using var readStream = fileInfo.OpenRead();
-        await readStream.ReadAsync(summarizeArray, ct);
-        var result = Hash.ComputeHash(summarizeArray);
+        var result = await MD5.HashDataAsync(readStream, ct);
 
-        Pool.Return(summarizeArray);
         return result;
     }
+
     private async Task<byte[]> CalculateRoughHashAsync(IFileInfo fileInfo, CancellationToken ct)
     {
-        var amounts = (int)(fileInfo.Length / SplicingDistance);
-        var remainder = (int)(fileInfo.Length % SplicingDistance);
-        var summarizeArray = Pool.Rent(BufferSize * amounts); // Why the fuck do I not respect the remainder in the summary array
-        var buffer = Pool.Rent(amounts);
+        var size = (int)Math.Min(Int32.MaxValue, fileInfo.Length / 3);
+        var smallArray = Pool.Rent(size);
+        var summarizeArray = Pool.Rent(MD5.HashSizeInBytes * 2);
 
-        //await Parallel.ForAsync(0, amounts, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (i, ct) =>
-        for (int i = 0; i < amounts + 1; i++)
-        {
-            var from = i * SplicingDistance;
-            var size = (i == amounts + 1 ? BufferSize + remainder : BufferSize);
+        using var readStream = fileInfo.OpenRead();
 
-            using var readStream = fileInfo.OpenRead();
-            readStream.Position = from;
-            int read = await readStream.ReadAsync(buffer, ct);
+        readStream.Position = 0;
+        await readStream.ReadAsync(smallArray, ct);
+        var firstHash = MD5.HashData(smallArray);
 
-            Array.Copy(buffer, 0, summarizeArray, i * BufferSize, read);
-            Pool.Return(buffer);
-        }
+        readStream.Position = (int)(fileInfo.Length - size);
+        await readStream.ReadAsync(smallArray, ct);
+        var secondHash = MD5.HashData(smallArray);
 
-        var result = Hash.ComputeHash(summarizeArray);
+        Array.Copy(firstHash, 0, summarizeArray, 0, firstHash.Length);
+        Array.Copy(secondHash, 0, summarizeArray, firstHash.Length, secondHash.Length);
 
+        var result = MD5.HashData(summarizeArray);
+
+        Pool.Return(smallArray);
         Pool.Return(summarizeArray);
         return result;
     }
     private async Task<byte[]> CalculatePreciseHashAsync(IFileInfo fileInfo, CancellationToken ct)
     {
-        var amounts = (int)(fileInfo.Length / SplicingDistance);
-        var remainder = (int)(fileInfo.Length % SplicingDistance);
-        var summarizeArray = Pool.Rent(BufferSize * amounts);
+        var totalTime = Stopwatch.GetTimestamp();
 
-        //await Parallel.ForAsync(0, amounts, new ParallelOptions() { CancellationToken = ct, MaxDegreeOfParallelism = 3 }, async (i, ct) =>
+        var amounts = (int)(fileInfo.Length / SpliceThreshold);
+        var summarizeArray = Pool.Rent(MD5.HashSizeInBytes * amounts);
+        using var readStream = fileInfo.OpenRead();
+        byte[] tempResult;
+        byte[] buffer;
+
         for (int i = 0; i < amounts; i++)
         {
-            var from = i * SplicingDistance;
-            var size = (i == amounts ? BufferSize + remainder : BufferSize);
+            var iterationTime = Stopwatch.GetTimestamp();
+            var from = i * SpliceThreshold;
 
-            var buffer = Pool.Rent(size);
+            buffer = Pool.Rent(SpliceThreshold);
 
-            using var readStream = fileInfo.OpenRead();
             readStream.Position = from;
             await readStream.ReadAsync(buffer, ct);
+            tempResult = MD5.HashData(buffer);
 
-            Array.Copy(buffer, 0, summarizeArray, i * BufferSize, size);
+            Array.Copy(tempResult, 0, summarizeArray, i * MD5.HashSizeInBytes, MD5.HashSizeInBytes);
             Pool.Return(buffer);
+
+            var elapsed = Stopwatch.GetElapsedTime(iterationTime);
+            Logger.Debug("Iteration took {ElapsedTime:ss\\.fff}", elapsed);
         }
 
-        var result = Hash.ComputeHash(summarizeArray);
+        buffer = Pool.Rent(SpliceThreshold);
+        readStream.Position = (amounts - 1) * SpliceThreshold;
+        await readStream.ReadAsync(buffer, ct);
+        tempResult = MD5.HashData(buffer);
 
+        Array.Copy(tempResult, 0, summarizeArray, (amounts - 1) * MD5.HashSizeInBytes, MD5.HashSizeInBytes);
+
+        var result = MD5.HashData(summarizeArray);
+
+        Pool.Return(buffer);
         Pool.Return(summarizeArray);
+
+        var totalElapsed = Stopwatch.GetElapsedTime(totalTime);
+        Logger.Debug("Complete File Hashing took {ElapsedTime:ss\\.fff}", totalElapsed);
+
         return result;
     }
 }
