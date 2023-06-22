@@ -1,63 +1,68 @@
-﻿//using DupeBuster.Core;
-//using System.IO.Abstractions.TestingHelpers;
-//using DupeBuster.Core.Comparer;
+﻿using DupeBuster.Core;
+using DupeBuster.Core.Comparer;
+using System.IO.Abstractions;
+using System.Drawing;
 
-//namespace DupeBuster.Tests;
+namespace DupeBuster.Tests;
 
-//public class FileSizeEqualityComparerTests
-//{
-//    private readonly FileSizeEqualityComparer _comparer = FileSizeEqualityComparer.Default;
+public class FileSizeEqualityComparerTests
+{
+    private readonly FileSizeEqualityComparer _comparer = FileSizeEqualityComparer.Default;
 
-//    [Theory]
-//    [InlineData(Intensity.Rough)]
-//    [InlineData(Intensity.Precise)]
-//    public async Task Can_Find_Duplicates_With_Duplicates(Intensity intensity)
-//    {
-//        const int Size = 1024 * 1024;
+    [Theory]
+    [InlineData(Intensity.Rough)]
+    [InlineData(Intensity.Precise)]
+    public async Task Can_Find_Duplicates_With_Duplicates(Intensity intensity)
+    {
+        const int Size = 1024 * 1024;
 
-//        const string RootPath = @"C:\Users\Public\Documents";
-//        var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>()
-//        {
-//            { Path.Combine(RootPath, "File1.txt"), new MockFileData(new byte[Size]) },
-//            { Path.Combine(RootPath, "File2.txt"), new MockFileData(new byte[2]) },
-//            { Path.Combine(RootPath, "Test", "File1.txt"), new MockFileData(new byte[Size]) },
-//            { Path.Combine(RootPath, "Some Where Else", "File2.txt"), new MockFileData(new byte[0]) },
-//            { Path.Combine(RootPath, "Test", "Some Random Name.txt"), new MockFileData(new byte[Size]) }
-//        });
-//        var duper = new DupeFinder(fileSystem).AddComparer(_comparer);
+        string rootPath = GetMethodName();
+        using var fileEnsurer = new FileEnsurer();
+        fileEnsurer.Setup(rootPath,
+            (Path.Combine("File1.txt"), new byte[Size]),
+            (Path.Combine("File2.txt"), new byte[2]),
+            (Path.Combine("Test", "File1.txt"), new byte[Size]),
+            (Path.Combine("Some Where Else", "File2.txt"), new byte[Size]),
+            (Path.Combine("Test", "Some Random Name.txt"), new byte[Size])
+            );
+        var fileSystem = new FileSystem();
 
-//        var results = (await duper.FindDuplicatesAsync(RootPath, intensity)).ToList();
-//        Assert.Single(results);
+        var duper = new DupeFinder(fileSystem).AddComparer(_comparer);
 
-//        var comparisonResult = results.First();
-//        Assert.Equal(_comparer.Type, comparisonResult.Type);
-//        Assert.Single(comparisonResult.DuplicateSets);
+        var results = (await duper.FindDuplicatesAsync(rootPath, intensity)).ToList();
+        Assert.Single(results);
 
-//        var set = comparisonResult.DuplicateSets.First();
-//        Assert.Equal(3, set.Count);
-//    }
+        var comparisonResult = results.First();
+        Assert.Equal(_comparer.Type, comparisonResult.Type);
+        Assert.Single(comparisonResult.DuplicateSets);
 
-//    [Theory]
-//    [InlineData(Intensity.Rough)]
-//    [InlineData(Intensity.Precise)]
-//    public async Task Cannot_Find_Duplicates_Without_Duplicates(Intensity intensity)
-//    {
-//        const string RootPath = @"C:\Users\Public\Documents";
-//        var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>()
-//        {
-//            { Path.Combine(RootPath, "File1.txt"), new MockFileData(new byte[1]) },
-//            { Path.Combine(RootPath, "File2.txt"), new MockFileData(new byte[2]) },
-//            { Path.Combine(RootPath, "Test", "File1.txt"), new MockFileData(new byte[3]) },
-//            { Path.Combine(RootPath, "Some Where Else", "File2.txt"), new MockFileData(new byte[4]) },
-//            { Path.Combine(RootPath, "Test", "Some Random Name.txt"), new MockFileData(new byte[5]) }
-//        });
-//        var duper = new DupeFinder(fileSystem).AddComparer(_comparer);
+        var set = comparisonResult.DuplicateSets.First();
+        Assert.Equal(4, set.Count);
+    }
 
-//        var results = (await duper.FindDuplicatesAsync(RootPath, intensity)).ToList();
-//        Assert.Single(results);
+    [Theory]
+    [InlineData(Intensity.Rough)]
+    [InlineData(Intensity.Precise)]
+    public async Task Cannot_Find_Duplicates_Without_Duplicates(Intensity intensity)
+    {
+        string rootPath = GetMethodName();
+        using var fileEnsurer = new FileEnsurer();
+        fileEnsurer.Setup(rootPath,
+            (Path.Combine("File1.txt"), new byte[1]),
+            (Path.Combine("File2.txt"), new byte[2]),
+            (Path.Combine("Test", "File1.txt"), new byte[3]),
+            (Path.Combine("Some Where Else", "File2.txt"), new byte[4]),
+            (Path.Combine("Test", "Some Random Name.txt"), new byte[5])
+            );
+        var fileSystem = new FileSystem();
 
-//        var comparisonResult = results.First();
-//        Assert.Equal(_comparer.Type, comparisonResult.Type);
-//        Assert.Empty(comparisonResult.DuplicateSets);
-//    }
-//}
+        var duper = new DupeFinder(fileSystem).AddComparer(_comparer);
+
+        var results = (await duper.FindDuplicatesAsync(rootPath, intensity)).ToList();
+        Assert.Single(results);
+
+        var comparisonResult = results.First();
+        Assert.Equal(_comparer.Type, comparisonResult.Type);
+        Assert.Empty(comparisonResult.DuplicateSets);
+    }
+}
